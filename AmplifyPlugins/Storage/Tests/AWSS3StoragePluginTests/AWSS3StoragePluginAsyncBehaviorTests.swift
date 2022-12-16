@@ -147,20 +147,31 @@ class AWSS3StoragePluginAsyncBehaviorTests: AWSS3StoragePluginTests {
         await waitForExpectations([done])
     }
 
-    func testPluginListAsync() async throws  {
-        let done = asyncExpectation(description: "done")
-        let item = StorageListResult.Item(key: testKey)
-        let input = StorageListResult(items: [item])
+    func testPluginList() async throws  {
+        let testKey = UUID().uuidString
+        let result = StorageListResult(items: [StorageListResult.Item(key: testKey)])
 
-        Task {
-            storageService.storageServiceListEvents = [.completed(input)]
-            let output = try await storagePlugin.list(options: nil)
-            XCTAssertEqual(input.items.first?.key, output.items.first?.key)
-            XCTAssertEqual(1, storageService.listCalled)
-            await done.fulfill()
-        }
-
-        await waitForExpectations([done], timeout: 3.0)
+        storageService.storageServiceListResults.append(.success(result))
+        let output = try await storagePlugin.list(options: nil)
+        XCTAssertEqual(output.items.map { $0.key }, [
+            testKey
+        ])
+        XCTAssertEqual(storageService.interactions, [
+            "list(prefix:options:) public/ "
+        ])
     }
 
+    func testPluginListFailure() async throws  {
+        let errorCode = UUID().uuidString
+        enum ListError: Error {
+            case expectedError(String)
+        }
+        storageService.storageServiceListResults.append(.failure(ListError.expectedError(errorCode)))
+        do {
+            let _ = try await storagePlugin.list(options: nil)
+            XCTFail("Expecting failure")
+        } catch {
+            XCTAssertEqual(String(describing: error), #"expectedError("\#(errorCode)")"#)
+        }
+    }
 }
