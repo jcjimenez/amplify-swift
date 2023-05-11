@@ -26,8 +26,3 @@ extension StorageUploadFileRequest {
         return nil
     }
 }
-
-extension StorageUploadFileRequest.Options {
-    /// The minimum size before utilizing multipart upload functionality is 5MB
-    static let multiPartUploadSizeThreshold = 5_000_000
-}

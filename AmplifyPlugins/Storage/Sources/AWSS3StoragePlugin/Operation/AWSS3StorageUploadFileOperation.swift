@@ -116,7 +116,9 @@ class AWSS3StorageUploadFileOperation: AmplifyInProcessReportingOperation<
                 let prefix = try await prefixResolver.resolvePrefix(for: request.options.accessLevel, targetIdentityId: request.options.targetIdentityId)
                 let serviceKey = prefix + request.key
                 let serviceMetadata = StorageRequestUtils.getServiceMetadata(request.options.metadata)
-                if uploadSize > StorageUploadFileRequest.Options.multiPartUploadSizeThreshold {
+                let pluginOptions = request.options.pluginOptions as? AWSStorageUploadFileOptions
+                let threshold = pluginOptions?.singleUploadSizeLimit ?? AWSStorageUploadFileOptions.defaultSingleUploadSizeLimit
+                if uploadSize > threshold.byteCount {
                     storageService.multiPartUpload(serviceKey: serviceKey,
                                                         uploadSource: .local(request.local),
                                                         contentType: request.options.contentType,
